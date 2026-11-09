@@ -1,0 +1,38 @@
+name: Validate catalog structure
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: catalog-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  structure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # PR data is never used as tooling or configuration for execution.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          path: trusted
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: submitted
+          persist-credentials: false
+          lfs: false
+          submodules: false
+      - name: Test trusted validator
+        working-directory: trusted
+        run: python3 -I -m unittest discover -s tests -v
+      - name: Validate submitted data with trusted schemas
+        run: python3 -I trusted/tooling/catalog.py validate-repository submitted
+      - name: State validation scope
+        run: echo 'Structural validation only. No runtime asset adapters are released; this is not gameplay compatibility.' >> "$GITHUB_STEP_SUMMARY"

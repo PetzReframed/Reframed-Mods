@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "package": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 240
+    },
+    "sha256": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "bytes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 268435456
+    },
+    "expandedBytes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 268435456
+    },
+    "manifestSha256": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "sourceCommit": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "installable": {
+      "const": false
+    },
+    "validation": {
+      "const": "structure-only"
+    },
+    "unsupportedReason": {
+      "const": "No runtime asset adapters are released."
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "package",
+    "sha256",
+    "bytes",
+    "expandedBytes",
+    "manifestSha256",
+    "sourceCommit",
+    "installable",
+    "validation",
+    "unsupportedReason"
+  ],
+  "additionalProperties": false
+}

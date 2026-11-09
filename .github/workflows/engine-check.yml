@@ -1,0 +1,52 @@
+name: Check pack against pinned engine build
+on:
+  workflow_dispatch:
+    inputs:
+      engine_run_id:
+        description: Trusted main-game workflow run ID
+        required: true
+      engine_commit:
+        description: Expected 40-character main-game commit
+        required: true
+      contract_sha256:
+        description: Trusted SHA-256 of game-build-contract.json
+        required: true
+      manifest:
+        description: Reviewed mods/publisher/slug/versions/version/manifest.json
+        required: true
+permissions:
+  contents: read
+  actions: read
+jobs:
+  compatibility:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          persist-credentials: false
+      - name: Validate trusted artifact coordinates
+        env:
+          ENGINE_COMMIT: ${{ inputs.engine_commit }}
+          ENGINE_RUN: ${{ inputs.engine_run_id }}
+          CONTRACT_SHA: ${{ inputs.contract_sha256 }}
+        run: |
+          python3 -I -c 'import os,re; assert re.fullmatch("[0-9a-f]{40}",os.environ["ENGINE_COMMIT"]); assert re.fullmatch("[0-9]+",os.environ["ENGINE_RUN"]); assert re.fullmatch("[0-9a-f]{64}",os.environ["CONTRACT_SHA"])'
+      - name: Download explicit engine artifact
+        env:
+          GH_TOKEN: ${{ secrets.ENGINE_ARTIFACT_READ_TOKEN || github.token }}
+          ENGINE_COMMIT: ${{ inputs.engine_commit }}
+          ENGINE_RUN: ${{ inputs.engine_run_id }}
+        run: gh run download "$ENGINE_RUN" --repo PetzReframed/Petz5Reframed --name "game-build-$ENGINE_COMMIT" --dir engine
+      - name: Build structural review package
+        env:
+          MANIFEST: ${{ inputs.manifest }}
+        run: python3 -I tooling/catalog.py build-version . --manifest "$MANIFEST" --output build/candidate.petzmod
+      - name: Verify engine identity and reject unsupported adapters
+        env:
+          ENGINE_COMMIT: ${{ inputs.engine_commit }}
+          CONTRACT_SHA: ${{ inputs.contract_sha256 }}
+        run: python3 -I tooling/engine_check.py --engine engine --expected-commit "$ENGINE_COMMIT" --expected-contract-sha256 "$CONTRACT_SHA" --package build/candidate.petzmod
+      # Current supportedAssetTypes=[] intentionally yields nonzero unsupported.
+      # There is no publication job, release token or PR-triggered engine download.
