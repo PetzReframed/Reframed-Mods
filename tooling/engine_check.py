@@ -2,7 +2,7 @@
 import argparse,json,re,sys
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parent))
-from catalog import Invalid,require,json_bytes,sha,read_file,inspect_archive,MAX_TOTAL
+from catalog import Invalid,require,json_bytes,sha,canonical,read_file,inspect_archive,MAX_TOTAL
 
 def verify_engine(directory,expected_commit,expected_contract_sha):
     require(re.fullmatch('[0-9a-f]{40}',expected_commit) and re.fullmatch('[0-9a-f]{64}',expected_contract_sha),'Trusted expected commit and contract hash required')
@@ -31,8 +31,20 @@ def check_pack(engine,package):
     return {'pack':manifest['id'],'version':manifest['version'],'engineCommit':engine['sourceCommit'],'structurallyValid':True,'runtimeCompatible':False,'unsupportedAssetTypes':unsupported,'reason':'No runtime asset adapters are released.'}
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--engine',type=Path,required=True);p.add_argument('--expected-commit',required=True);p.add_argument('--expected-contract-sha256',required=True);p.add_argument('--package',type=Path,required=True);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--engine',type=Path,required=True);p.add_argument('--expected-commit',required=True);p.add_argument('--expected-contract-sha256',required=True);p.add_argument('--package',type=Path,required=True);p.add_argument('--expected-validator-sha256');p.add_argument('--receipt-out',type=Path);p.add_argument('--source-commit');a=p.parse_args()
     try:
-        engine=verify_engine(a.engine,a.expected_commit,a.expected_contract_sha256);result=check_pack(engine,a.package);print(json.dumps(result,sort_keys=True));raise SystemExit(2)
+        engine=verify_engine(a.engine,a.expected_commit,a.expected_contract_sha256);
+        if a.receipt_out or a.source_commit:
+            require(a.receipt_out and a.expected_validator_sha256 and re.fullmatch('[a-f0-9]{40}',a.source_commit or ''),'Receipt requires pinned validator and reviewed source commit')
+        if a.expected_validator_sha256:
+            from engine_validator import validate_content
+            result=validate_content(engine,a.engine,a.expected_validator_sha256,a.package)
+            if a.receipt_out:
+                receipt={'receiptVersion':1,'sourceRepository':'PetzReframed/Petz5Reframed-Mods','sourceCommit':a.source_commit,
+                         'engineCommit':a.expected_commit,'engineContractSha256':a.expected_contract_sha256,
+                         'validatorContractSha256':a.expected_validator_sha256,'result':result}
+                with a.receipt_out.open('xb') as output:output.write(canonical(receipt))
+            print(json.dumps(result,sort_keys=True));return
+        print(json.dumps(check_pack(engine,a.package),sort_keys=True));raise SystemExit(2)
     except(Invalid,OSError)as exc:p.exit(1,str(exc)+'\n')
 if __name__=='__main__':main()

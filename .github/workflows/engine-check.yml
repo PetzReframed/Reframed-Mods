@@ -11,6 +11,9 @@ on:
       contract_sha256:
         description: Trusted SHA-256 of game-build-contract.json
         required: true
+      validator_contract_sha256:
+        description: Optional trusted SHA-256 of game-validator-contract.json for decoded content validation
+        required: false
       manifest:
         description: Reviewed mods/publisher/slug/versions/version/manifest.json
         required: true
@@ -43,10 +46,44 @@ jobs:
         env:
           MANIFEST: ${{ inputs.manifest }}
         run: python3 -I tooling/catalog.py build-version . --manifest "$MANIFEST" --output build/candidate.petzmod
-      - name: Verify engine identity and reject unsupported adapters
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        if: inputs.validator_contract_sha256 != ''
+        with:
+          node-version: '24'
+      - name: Verify engine identity and reviewed package
         env:
           ENGINE_COMMIT: ${{ inputs.engine_commit }}
           CONTRACT_SHA: ${{ inputs.contract_sha256 }}
-        run: python3 -I tooling/engine_check.py --engine engine --expected-commit "$ENGINE_COMMIT" --expected-contract-sha256 "$CONTRACT_SHA" --package build/candidate.petzmod
-      # Current supportedAssetTypes=[] intentionally yields nonzero unsupported.
+          VALIDATOR_SHA: ${{ inputs.validator_contract_sha256 }}
+        run: |
+          extra=()
+          if [[ -n "$VALIDATOR_SHA" ]]; then extra+=(--expected-validator-sha256 "$VALIDATOR_SHA" --receipt-out build/validation-receipt.json --source-commit "$GITHUB_SHA"); fi
+          python3 -I tooling/engine_check.py --engine engine --expected-commit "$ENGINE_COMMIT" --expected-contract-sha256 "$CONTRACT_SHA" --package build/candidate.petzmod "${extra[@]}"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: inputs.validator_contract_sha256 != ''
+        with:
+          name: mod-validation-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: build/validation-receipt.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Record verified release coordinates
+        if: inputs.validator_contract_sha256 != ''
+        run: |
+          python3 -I - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          raw = Path("build/validation-receipt.json").read_bytes()
+          receipt = json.loads(raw)
+          artifact = "mod-validation-{GITHUB_SHA}-{GITHUB_RUN_ID}-{GITHUB_RUN_ATTEMPT}".format_map(os.environ)
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+              print("### Reviewed package evidence", file=summary)
+              for label, value in (
+                  ("Receipt artifact (30 days)", artifact),
+                  ("Mods source commit", receipt["sourceCommit"]),
+                  ("Engine commit", receipt["engineCommit"]),
+                  ("Package archive SHA-256", receipt["result"]["archiveSha256"]),
+                  ("Receipt SHA-256 for --release", hashlib.sha256(raw).hexdigest()),
+              ):
+                  print(f"- {label}: `{value}`", file=summary)
+          PY
       # There is no publication job, release token or PR-triggered engine download.

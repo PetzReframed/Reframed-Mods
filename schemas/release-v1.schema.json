@@ -51,10 +51,44 @@
       "const": false
     },
     "validation": {
-      "const": "structure-only"
+      "enum": [
+        "structure-only",
+        "engine-content"
+      ]
     },
     "unsupportedReason": {
-      "const": "No runtime asset adapters are released."
+      "enum": [
+        "No runtime asset adapters are released.",
+        "Content validated for one pinned engine. Catalog publication has not been approved."
+      ]
+    },
+    "engineValidation": {
+      "type": "object",
+      "properties": {
+        "receiptSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "engineCommit": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "engineContractSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "validatorContractSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "receiptSha256",
+        "engineCommit",
+        "engineContractSha256",
+        "validatorContractSha256"
+      ],
+      "additionalProperties": false
     }
   },
   "required": [

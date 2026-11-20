@@ -23,6 +23,25 @@ class Producer(unittest.TestCase):
   a=self.run_build();b=self.run_build('again');self.assertEqual(a,b);C.checked(a,'release');raw=(self.root/'out'/a['package']).read_bytes();self.assertEqual(raw,C.build_bytes(self.manifest,self.files));self.assertEqual(a['sha256'],C.sha(raw))
   with zipfile.ZipFile(io.BytesIO(raw)) as z:self.assertEqual(a['manifestSha256'],C.sha(z.read('manifest.json')));self.assertEqual(a['expandedBytes'],sum(i.file_size for i in z.infolist()))
   self.assertNotEqual(a['manifestSha256'],C.sha((self.repo/MANIFEST).read_bytes()))
+ def test_pinned_receipt_requires_exact_committed_package_manifest_and_engine(self):
+  record=self.run_build();engine='2'*40
+  validation={'resultVersion':1,'valid':True,'engineVersion':'git-'+engine,'id':record['id'],'version':record['version'],
+              'archiveBytes':record['bytes'],'archiveSha256':record['sha256'],'manifestSha256':record['manifestSha256'],'assetTypes':['music']}
+  value={'receiptVersion':1,'sourceRepository':'PetzReframed/Petz5Reframed-Mods','sourceCommit':self.commit,'engineCommit':engine,
+         'engineContractSha256':'a'*64,'validatorContractSha256':'b'*64,'result':validation}
+  path=self.root/'receipt.json'
+  def write(obj):
+   raw=C.canonical(obj);path.write_bytes(raw);return C.sha(raw)
+  def build(name,pin,expected=engine):
+   return produce(C,self.repo,self.commit,MANIFEST,self.root/name,receipt=path,expected_receipt_sha256=pin,expected_engine_commit=expected)
+  proof=build('validated',write(value));self.assertEqual(proof['validation'],'engine-content');self.assertFalse(proof['installable'])
+  self.assertEqual((self.root/'validated/validation-receipt.json').read_bytes(),path.read_bytes())
+  for changed,pin,expected in [(value,'0'*64,engine),(value,None,'3'*40),(value|{'sourceCommit':'4'*40},None,engine),
+      (value|{'result':validation|{'archiveSha256':'5'*64}},None,engine),(value|{'result':validation|{'manifestSha256':'6'*64}},None,engine)]:
+   actual=write(changed)
+   with self.assertRaises(ValueError):build('refused',pin or actual,expected)
+   self.assertFalse((self.root/'refused').exists())
+
  def test_dirty_worktree_and_index_do_not_affect_output(self):
   first=self.run_build();self.write(MANIFEST,b'not json');self.write('mods/test/music/src/music/test.wav',b'dirty');self.git('add','.');self.assertEqual(first,self.run_build('dirty'))
  def test_invalid_commit_path_and_identity_leave_no_output(self):

@@ -35,4 +35,4 @@ jobs:
       - name: Validate submitted data with trusted schemas
         run: python3 -I trusted/tooling/catalog.py validate-repository submitted
       - name: State validation scope
-        run: echo 'Structural validation only. No runtime asset adapters are released; this is not gameplay compatibility.' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'Structure checked. After merge, use the default-branch engine-check workflow with pinned build and validator contracts to obtain a reviewed package receipt. See the README for the release handoff.' >> "$GITHUB_STEP_SUMMARY"

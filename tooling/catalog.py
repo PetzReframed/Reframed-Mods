@@ -87,7 +87,12 @@ def validate_schema(value, schema, at='$'):
     if type(value) is int: require(schema.get('minimum', value) <= value <= schema.get('maximum', value), at + ': numeric bound')
 
 def schema(name): return json_bytes((ROOT / 'schemas' / (name + '-v1.schema.json')).read_bytes())
-def checked(value, name): validate_schema(value, schema(name)); return value
+def checked(value, name):
+    validate_schema(value, schema(name))
+    if name=='release':
+        engine=value['validation']=='engine-content'
+        require(engine==('engineValidation' in value) and engine==(value['unsupportedReason']=='Content validated for one pinned engine. Catalog publication has not been approved.'),'Release validation evidence mismatch')
+    return value
 
 def validate_manifest(manifest, files):
     checked(manifest, 'manifest')

@@ -21,6 +21,17 @@ class Engine(unittest.TestCase):
                 with self.assertRaises(c.Invalid):engine.verify_engine(d,wrong_commit,wrong_hash)
             (d/'petz5reframed-engine.zip').write_bytes(b'changed')
             with self.assertRaises(c.Invalid):engine.verify_engine(d,commit,digest)
+    def test_opt_in_validator_requires_its_own_pin_before_opening_engine_code(self):
+        from engine_validator import validate_content
+        with tempfile.TemporaryDirectory() as td:
+            d=pathlib.Path(td);commit,digest=self.setup_engine(d)
+            engine_row=engine.verify_engine(d,commit,digest)
+            raw=b'{}';(d/'game-validator-contract.json').write_bytes(raw)
+            with self.assertRaisesRegex(c.Invalid,'Validator contract hash'):
+                validate_content(engine_row,d,'0'*64,d/'missing.petzmod')
+            with self.assertRaisesRegex(c.Invalid,'Unsupported validator contract'):
+                validate_content(engine_row,d,c.sha(raw),d/'missing.petzmod')
+
     def test_incompatible_exact_engine(self):
         with tempfile.TemporaryDirectory()as td:
             d=pathlib.Path(td);commit,digest=self.setup_engine(d);checked=engine.verify_engine(d,commit,digest)

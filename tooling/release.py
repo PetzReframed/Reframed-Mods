@@ -34,7 +34,27 @@ class Committed:
         if len(data)!=size:raise ValueError('Committed blob size changed')
         return data
 
-def produce(catalog,repo,commit,manifest_path,output):
+def checked_receipt(c,receipt,path_sha,engine_commit,commit,manifest,record):
+    if not (isinstance(path_sha,str) and re.fullmatch('[a-f0-9]{64}',path_sha) and
+            isinstance(engine_commit,str) and re.fullmatch('[a-f0-9]{40}',engine_commit)):
+        raise ValueError('Trusted receipt SHA-256 and engine commit are required')
+    path=Path(receipt)
+    raw=c.read_file(path.parent,path.name,16384)
+    if c.sha(raw)!=path_sha:raise ValueError('Validation receipt hash mismatch')
+    value=c.json_bytes(raw)
+    pins={k:value.get(k) for k in ('engineContractSha256','validatorContractSha256')}
+    if not all(isinstance(v,str) and re.fullmatch('[a-f0-9]{64}',v) for v in pins.values()):
+        raise ValueError('Missing validated contract pins')
+    expected={'receiptVersion':1,'sourceRepository':'PetzReframed/Petz5Reframed-Mods','sourceCommit':commit,
+              'engineCommit':engine_commit,**pins,'result':{'resultVersion':1,'valid':True,'engineVersion':'git-'+engine_commit,
+              'id':record['id'],'version':record['version'],'archiveBytes':record['bytes'],'archiveSha256':record['sha256'],
+              'manifestSha256':record['manifestSha256'],'assetTypes':sorted({r['type'] for r in manifest['files']}-{'preview','notice'})}}
+    if c.canonical(value)!=c.canonical(expected) or manifest['compatibility']['engine'] not in ('*','git-'+engine_commit):
+        raise ValueError('Validation receipt differs from committed package or pinned engine')
+    return raw,{'receiptSha256':path_sha,'engineCommit':engine_commit,**pins}
+
+
+def produce(catalog,repo,commit,manifest_path,output,*,receipt=None,expected_receipt_sha256=None,expected_engine_commit=None):
     c=catalog;path=c.safe_path(manifest_path);parts=path.split('/')
     if len(parts)!=6 or parts[0]!='mods' or parts[3]!='versions' or parts[5]!='manifest.json':raise ValueError('Expected mods/publisher/slug/versions/version/manifest.json')
     source=Committed(repo,commit);base='/'.join(parts[:3]);project=c.checked(c.json_bytes(source.blob(base+'/project.json',c.MAX_JSON)),'project')
@@ -48,14 +68,21 @@ def produce(catalog,repo,commit,manifest_path,output):
     archive=c.build_bytes(manifest,files);expanded=len(embedded)+sum(map(len,files.values()))
     if expanded>c.MAX_TOTAL:raise ValueError('Expanded archive size limit')
     digest=c.sha(archive)
-    record=c.checked({'id':manifest['id'],'version':manifest['version'],'package':'packages/'+digest+'.petzmod','sha256':digest,'bytes':len(archive),'expandedBytes':expanded,'manifestSha256':c.sha(embedded),'sourceCommit':commit,'installable':False,'validation':'structure-only','unsupportedReason':'No runtime asset adapters are released.'},'release')
+    record={'id':manifest['id'],'version':manifest['version'],'package':'packages/'+digest+'.petzmod','sha256':digest,'bytes':len(archive),'expandedBytes':expanded,'manifestSha256':c.sha(embedded),'sourceCommit':commit,'installable':False,'validation':'structure-only','unsupportedReason':'No runtime asset adapters are released.'}
+    receipt_bytes=None
+    if any(v is not None for v in (receipt,expected_receipt_sha256,expected_engine_commit)):
+        if receipt is None:raise ValueError('A validation receipt is required with its pins')
+        receipt_bytes,proof=checked_receipt(c,receipt,expected_receipt_sha256,expected_engine_commit,commit,manifest,record)
+        record.update(validation='engine-content',unsupportedReason='Content validated for one pinned engine. Catalog publication has not been approved.',engineValidation=proof)
+    c.checked(record,'release')
     out=Path(output);out.mkdir() # exclusive: no existing directory/output is ever reused
     (out/'packages').mkdir()
     with (out/record['package']).open('xb') as stream:stream.write(archive)
     with (out/'release.json').open('xb') as stream:stream.write(c.canonical(record))
+    if receipt_bytes is not None:(out/'validation-receipt.json').write_bytes(receipt_bytes)
     return record
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--trusted-tooling',type=Path,required=True);p.add_argument('--repository',type=Path,required=True);p.add_argument('--commit',required=True);p.add_argument('--manifest',required=True);p.add_argument('--out',type=Path,required=True);a=p.parse_args()
-    print(json.dumps(produce(load_catalog(a.trusted_tooling),a.repository,a.commit,a.manifest,a.out),sort_keys=True))
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--trusted-tooling',type=Path,required=True);p.add_argument('--repository',type=Path,required=True);p.add_argument('--commit',required=True);p.add_argument('--manifest',required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--validation-receipt',type=Path);p.add_argument('--expected-receipt-sha256');p.add_argument('--expected-engine-commit');a=p.parse_args()
+    print(json.dumps(produce(load_catalog(a.trusted_tooling),a.repository,a.commit,a.manifest,a.out,receipt=a.validation_receipt,expected_receipt_sha256=a.expected_receipt_sha256,expected_engine_commit=a.expected_engine_commit),sort_keys=True))
 if __name__=='__main__':main()

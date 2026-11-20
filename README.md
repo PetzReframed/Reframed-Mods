@@ -109,9 +109,32 @@ or exposed to PR jobs. No workflow publishes releases.
 The source-only engine artifact contract is documented in
 [tooling/ENGINE-CONTRACT.md](tooling/ENGINE-CONTRACT.md). Original game resources
 remain external and are never included. An unavailable or incompatible artifact
-fails explicitly. Today `supportedAssetTypes` is empty: engine checks return
-**unsupported (exit 2)**, even when structural validation passes. Real gameplay
-validation must be added with adapters; there is no mocked compatibility badge.
+fails explicitly. A structure-only engine build returns **unsupported (exit 2)**.
+For decoded validation of music, Toy Case skins and Editor playscenes, supply the
+trusted validator contract SHA-256 as well as the build contract pin.
+
+### Hand off a successful package check
+
+After merge, run the manual engine check on the Mods default branch for the
+reviewed manifest. Its successful decoded check uploads `validation-receipt.json`
+for 30 days. The run summary identifies the artifact, source and engine commits,
+and separate SHA-256 values for the package and receipt. Download the artifact
+from that exact run and preserve the receipt bytes and independent summary pin.
+
+From a checkout containing the recorded Mods commit, generate a local feed with
+the manifest path used in the check and the **receipt SHA-256** from the summary:
+
+```sh
+python3 -I tooling/reviewed_feed.py --repository . --commit "$MODS_COMMIT" \
+  --expected-engine-commit "$ENGINE_COMMIT" \
+  --release "$MANIFEST" validation-receipt.json "$RECEIPT_SHA256" --out reviewed-feed
+```
+
+Repeat `--release` for each reviewed version needed by the selection, including
+required dependencies. Each receipt must match the same source and engine commits.
+The generator rebuilds the packages from committed files, checks their archive
+digests against the receipts, and writes to a new output directory. Publication
+remains a separate maintainer action.
 
 ## Licences
 
