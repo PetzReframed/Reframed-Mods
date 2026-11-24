@@ -45,7 +45,7 @@ def checked_receipt(c,receipt,path_sha,engine_commit,commit,manifest,record):
     pins={k:value.get(k) for k in ('engineContractSha256','validatorContractSha256')}
     if not all(isinstance(v,str) and re.fullmatch('[a-f0-9]{64}',v) for v in pins.values()):
         raise ValueError('Missing validated contract pins')
-    expected={'receiptVersion':1,'sourceRepository':'PetzReframed/Petz5Reframed-Mods','sourceCommit':commit,
+    expected={'receiptVersion':1,'sourceRepository':'PetzReframed/Reframed-Mods','sourceCommit':commit,
               'engineCommit':engine_commit,**pins,'result':{'resultVersion':1,'valid':True,'engineVersion':'git-'+engine_commit,
               'id':record['id'],'version':record['version'],'archiveBytes':record['bytes'],'archiveSha256':record['sha256'],
               'manifestSha256':record['manifestSha256'],'assetTypes':sorted({r['type'] for r in manifest['files']}-{'preview','notice'})}}

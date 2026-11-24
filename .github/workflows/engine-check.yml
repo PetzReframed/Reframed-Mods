@@ -41,7 +41,7 @@ jobs:
           GH_TOKEN: ${{ secrets.ENGINE_ARTIFACT_READ_TOKEN || github.token }}
           ENGINE_COMMIT: ${{ inputs.engine_commit }}
           ENGINE_RUN: ${{ inputs.engine_run_id }}
-        run: gh run download "$ENGINE_RUN" --repo PetzReframed/Petz5Reframed --name "game-build-$ENGINE_COMMIT" --dir engine
+        run: gh run download "$ENGINE_RUN" --repo PetzReframed/Reframed --name "game-build-$ENGINE_COMMIT" --dir engine
       - name: Build structural review package
         env:
           MANIFEST: ${{ inputs.manifest }}

@@ -38,7 +38,7 @@ class ReviewedFeed(unittest.TestCase):
         row=produce(c,f.repo,self.commit,path,work)
         result={'resultVersion':1,'valid':True,'engineVersion':'git-'+self.engine,'id':row['id'],'version':row['version'],
                 'archiveBytes':row['bytes'],'archiveSha256':row['sha256'],'manifestSha256':row['manifestSha256'],'assetTypes':['music']}
-        raw=c.canonical({'receiptVersion':1,'sourceRepository':'PetzReframed/Petz5Reframed-Mods','sourceCommit':self.commit,
+        raw=c.canonical({'receiptVersion':1,'sourceRepository':'PetzReframed/Reframed-Mods','sourceCommit':self.commit,
                          'engineCommit':self.engine,'engineContractSha256':'a'*64,'validatorContractSha256':'b'*64,'result':result})
         receipt=work/'review.json';receipt.write_bytes(raw)
         return path,receipt,c.sha(raw)

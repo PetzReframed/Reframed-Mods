@@ -27,7 +27,7 @@ class Producer(unittest.TestCase):
   record=self.run_build();engine='2'*40
   validation={'resultVersion':1,'valid':True,'engineVersion':'git-'+engine,'id':record['id'],'version':record['version'],
               'archiveBytes':record['bytes'],'archiveSha256':record['sha256'],'manifestSha256':record['manifestSha256'],'assetTypes':['music']}
-  value={'receiptVersion':1,'sourceRepository':'PetzReframed/Petz5Reframed-Mods','sourceCommit':self.commit,'engineCommit':engine,
+  value={'receiptVersion':1,'sourceRepository':'PetzReframed/Reframed-Mods','sourceCommit':self.commit,'engineCommit':engine,
          'engineContractSha256':'a'*64,'validatorContractSha256':'b'*64,'result':validation}
   path=self.root/'receipt.json'
   def write(obj):

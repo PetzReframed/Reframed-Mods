@@ -1,13 +1,13 @@
-# Petz5Reframed Mods
+# Reframed Mods
 
-The curated catalog and data-only resource-pack foundation for Petz5Reframed.
+The curated catalog and data-only resource-pack foundation for [Reframed](https://github.com/PetzReframed/Reframed).
 **This repository does not yet install mods into the game. No runtime asset
 adapters are released, and the generated catalog is intentionally empty.**
 
 The planned catalog covers **Breeds, Toyz, Playscenes, Skins, Music**, plus
 Clothes, Textures, Sounds, Hosts, Translations, Themes and explicitly registered
 other asset types. Categories do not confer permission to execute or mount files.
-See the [design](https://github.com/PetzReframed/Petz5Reframed-Docs/blob/main/mods.md)
+See the [design](https://github.com/PetzReframed/Reframed-Docs/blob/main/petz/interface/mods.md)
 and [contribution guide](CONTRIBUTING.md).
 
 ## Local checks

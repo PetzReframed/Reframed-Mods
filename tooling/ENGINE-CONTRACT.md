@@ -6,7 +6,7 @@ in one Actions artifact named `game-build-<sourceCommit>`.
 ```json
 {
   "contractVersion": 1,
-  "repository": "PetzReframed/Petz5Reframed",
+  "repository": "PetzReframed/Reframed",
   "sourceCommit": "<40 lowercase hex>",
   "engineVersion": "git-<same commit>",
   "assetApi": 1,
@@ -22,6 +22,8 @@ in one Actions artifact named `game-build-<sourceCommit>`.
   }]
 }
 ```
+
+The check also accepts the repository's former name, `PetzReframed/Petz5Reframed`, which game builds made under that name carry.
 
 Expected commit and contract SHA-256 come from an approved build, not from the
 submitted pack or downloaded contract itself. The consumer verifies those first,

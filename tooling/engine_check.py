@@ -11,7 +11,7 @@ def verify_engine(directory,expected_commit,expected_contract_sha):
     value=json_bytes(raw)
     require(set(value)=={'contractVersion','repository','sourceCommit','engineVersion','assetApi','supportedAssetTypes','capabilities','artifacts'},'Unexpected engine contract fields')
     require(type(value['contractVersion'])is int and value['contractVersion']==1 and type(value['assetApi'])is int and value['assetApi']==1,'Unsupported engine validation interface')
-    require(value['repository']=='PetzReframed/Petz5Reframed' and value['sourceCommit']==expected_commit and value['engineVersion']=='git-'+expected_commit,'Engine identity mismatch')
+    require(value['repository'] in ('PetzReframed/Reframed','PetzReframed/Petz5Reframed') and value['sourceCommit']==expected_commit and value['engineVersion']=='git-'+expected_commit,'Engine identity mismatch')
     require(isinstance(value['capabilities'],dict) and type(value['capabilities'].get('externalOriginalAssetsRequired'))is bool,'Invalid capability types')
     require(value['supportedAssetTypes']==[] and value['capabilities']=={'validationStatus':'no-runtime-adapters','externalOriginalAssetsRequired':True},'Unsupported capability contract; consumer upgrade required')
     require(isinstance(value['artifacts'],list) and len(value['artifacts'])==1,'Exactly one engine artifact required')
@@ -40,7 +40,7 @@ def main():
             from engine_validator import validate_content
             result=validate_content(engine,a.engine,a.expected_validator_sha256,a.package)
             if a.receipt_out:
-                receipt={'receiptVersion':1,'sourceRepository':'PetzReframed/Petz5Reframed-Mods','sourceCommit':a.source_commit,
+                receipt={'receiptVersion':1,'sourceRepository':'PetzReframed/Reframed-Mods','sourceCommit':a.source_commit,
                          'engineCommit':a.expected_commit,'engineContractSha256':a.expected_contract_sha256,
                          'validatorContractSha256':a.expected_validator_sha256,'result':result}
                 with a.receipt_out.open('xb') as output:output.write(canonical(receipt))

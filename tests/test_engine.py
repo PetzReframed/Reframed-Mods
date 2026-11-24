@@ -4,9 +4,9 @@ import catalog as c
 import engine_check as engine
 from test_catalog import fixture
 class Engine(unittest.TestCase):
-    def setup_engine(self,directory):
+    def setup_engine(self,directory,repository='PetzReframed/Reframed'):
         commit='a'*40;data=b'synthetic engine artifact, never executed'
-        contract={'contractVersion':1,'repository':'PetzReframed/Petz5Reframed','sourceCommit':commit,'engineVersion':'git-'+commit,'assetApi':1,'supportedAssetTypes':[],'capabilities':{'validationStatus':'no-runtime-adapters','externalOriginalAssetsRequired':True},'artifacts':[{'path':'petz5reframed-engine.zip','bytes':len(data),'sha256':c.sha(data)}]}
+        contract={'contractVersion':1,'repository':repository,'sourceCommit':commit,'engineVersion':'git-'+commit,'assetApi':1,'supportedAssetTypes':[],'capabilities':{'validationStatus':'no-runtime-adapters','externalOriginalAssetsRequired':True},'artifacts':[{'path':'petz5reframed-engine.zip','bytes':len(data),'sha256':c.sha(data)}]}
         raw=c.canonical(contract);(directory/'game-build-contract.json').write_bytes(raw);(directory/'petz5reframed-engine.zip').write_bytes(data)
         return commit,c.sha(raw)
     def test_pinned_contract_and_explicit_unsupported(self):
@@ -14,6 +14,13 @@ class Engine(unittest.TestCase):
             d=pathlib.Path(td);commit,digest=self.setup_engine(d);checked=engine.verify_engine(d,commit,digest)
             m,f=fixture();package=d/'example.petzmod';package.write_bytes(c.build_bytes(m,f));result=engine.check_pack(checked,package)
             self.assertFalse(result['runtimeCompatible']);self.assertEqual(result['unsupportedAssetTypes'],['music'])
+    def test_repository_is_reframed_or_its_former_name(self):
+        for repository,accepted in [('PetzReframed/Reframed',True),('PetzReframed/Petz5Reframed',True),('PetzReframed/Other',False)]:
+            with tempfile.TemporaryDirectory()as td:
+                d=pathlib.Path(td);commit,digest=self.setup_engine(d,repository)
+                if accepted:engine.verify_engine(d,commit,digest)
+                else:
+                    with self.assertRaises(c.Invalid):engine.verify_engine(d,commit,digest)
     def test_tamper_identity_and_artifact(self):
         with tempfile.TemporaryDirectory()as td:
             d=pathlib.Path(td);commit,digest=self.setup_engine(d)
