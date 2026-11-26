@@ -1,13 +1,13 @@
 # AGENTS.md
 
-Project documentation lives in the sibling `../Petz5Reframed-Docs` repository
-(`C:\GitHub\Petz5Reframed-Docs` in this workspace). Read its `README.md`,
-`implementation-status.md` and `completion-plan.md` for project context.
+Project documentation lives in the `docs` folder of the game repository, the
+sibling `../Petz5Reframed`. Read its `README.md`, `project/implementation-status.md`
+and `project/completion-plan.md` for project context.
 Update documentation there, including the original-game bug-fix record;
 do not recreate a `docs` directory in this code repository.
 Keep external research as attributed written findings with verification limits.
 Do not store imported spreadsheets, their cell exports, or outside reference
-images in the documentation repository. Native analysis inventories are separate
+images in the documentation. Native analysis inventories are separate
 from community reference data and must not embed imported workbook values.
 
 ## 1. Think Before Coding
@@ -68,7 +68,7 @@ For multi-step tasks, state a brief plan:
 
 Read `README.md`, `CONTRIBUTING.md` and `tooling/ENGINE-CONTRACT.md` before
 changing catalog tooling or compatibility workflows. The design lives in
-`../Petz5Reframed-Docs/mods.md`; runtime adapters live in `../Petz5Reframed`.
+`../Petz5Reframed/docs/petz/interface/mods.md`; runtime adapters live in `../Petz5Reframed`.
 
 - Treat submitted packs as untrusted data. PR validation runs trusted
   base-revision tooling and schemas, not submitted code or workflows. Never

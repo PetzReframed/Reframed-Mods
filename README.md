@@ -7,7 +7,7 @@ adapters are released, and the generated catalog is intentionally empty.**
 The planned catalog covers **Breeds, Toyz, Playscenes, Skins, Music**, plus
 Clothes, Textures, Sounds, Hosts, Translations, Themes and explicitly registered
 other asset types. Categories do not confer permission to execute or mount files.
-See the [design](https://github.com/PetzReframed/Reframed-Docs/blob/main/petz/interface/mods.md)
+See the [design](https://github.com/PetzReframed/Reframed/blob/main/docs/petz/interface/mods.md)
 and [contribution guide](CONTRIBUTING.md).
 
 ## Local checks
